@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Controller;
+
+use App\Entity\Friend;
+use App\Form\FriendType;
+use App\Repository\FriendRepository;
+use App\Repository\UserRepository;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+
+/**
+ * @Route("/friends")
+ */
+class FriendController extends AbstractController
+{
+    /**
+     * @Route("/", name="friend_index", methods={"GET"})
+     */
+    public function index(FriendRepository $friendRepository): Response
+    {
+        return $this->render('friend/index.html.twig', [
+            'friends' => $friendRepository->findAll(),
+        ]);
+    }
+
+    /**
+     * @Route("/new", name="friend_new", methods={"GET","POST"})
+     */
+    public function new(UserRepository $userRepository, Request $request): Response
+    {
+        if ($request->get('userId') !== $request->get('friendId')) {
+            $user = $userRepository->findOneBy(['id' => $request->get('userId')]);
+            $friend = $userRepository->findOneBy(['id' => $request->get('friendId')]);
+            $user_friends = $user->getFriends();
+            foreach ($user_friends as $item) {
+                if ($item->getFriend()->getId() === $friend->getId()) {
+                    return $this->redirectToRoute('profile_index',
+                        ['id' => $user->getId(), 'page' => $request->get('page')]);
+                }
+            }
+            $submit = new Friend();
+            $submit->setUser($user);
+            $submit->setFriend($friend);
+            $submit->setCreated(date_create());
+
+            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager->persist($submit);
+            $entityManager->flush();
+        }
+
+        return $this->redirectToRoute('profile_index',
+            ['id' => $request->get('userId'), 'page' => $request->get('page')]);
+    }
+
+    /**
+     * @Route("/{id}", name="friend_show", methods={"GET"})
+     */
+    public function show(Friend $friend): Response
+    {
+        return $this->render('friend/show.html.twig', [
+            'friend' => $friend,
+        ]);
+    }
+
+    /**
+     * @Route("/{id}/edit", name="friend_edit", methods={"GET","POST"})
+     */
+    public function edit(Request $request, Friend $friend): Response
+    {
+        $form = $this->createForm(FriendType::class, $friend);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->getDoctrine()->getManager()->flush();
+
+            return $this->redirectToRoute('friend_index');
+        }
+
+        return $this->render('friend/edit.html.twig', [
+            'friend' => $friend,
+            'form' => $form->createView(),
+        ]);
+    }
+
+    /**
+     * @Route("/{id}/delete", name="friend_delete", methods={"GET","DELETE"})
+     */
+    public function delete(Request $request, Friend $friend): Response
+    {
+        //if ($this->isCsrfTokenValid('delete'.$friend->getId(), $request->request->get('_token'))) {
+        $entityManager = $this->getDoctrine()->getManager();
+        $entityManager->remove($friend);
+        $entityManager->flush();
+        //}
+
+        return $this->redirectToRoute('profile_index',
+            ['id' => $friend->getUser()->getId(), 'page' => $request->get('page')]);
+    }
+}
