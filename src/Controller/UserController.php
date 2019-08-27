@@ -9,7 +9,6 @@ use App\Entity\User;
 use App\Form\CreateUserType;
 use App\Form\MediaType;
 use App\Form\UserType;
-use App\Repository\FriendRepository;
 use App\Repository\GroupRepository;
 use App\Repository\UserRepository;
 use App\Service\MailSender;
@@ -96,38 +95,56 @@ class UserController extends AbstractController
      */
     public function edit(Request $request, User $user, GroupRepository $groupRepository): Response
     {
-        if (!$request->get('groupId')) {
-            $form = $this->createForm(UserType::class, $user);
-            $form->handleRequest($request);
+        if ($user === $this->getUser() || $this->isGranted('ROLE_ADMIN')) {
+            if (!$request->get('groupId')) {
+                $form = $this->createForm(UserType::class, $user);
+                $form->handleRequest($request);
 
-            if ($form->isSubmitted() && $form->isValid()) {
+                if ($form->isSubmitted() && $form->isValid()) {
+                    $this->getDoctrine()->getManager()->flush();
+                }
+            } else {
+                $group = $groupRepository->findOneBy(['id' => $request->get('groupId')]);
+                $user->addGroup($group);
                 $this->getDoctrine()->getManager()->flush();
             }
-        } else {
-            $group = $groupRepository->findOneBy(['id' => $request->get('groupId')]);
-            $user->addGroup($group);
-            $this->getDoctrine()->getManager()->flush();
         }
 
-        return $this->redirectToRoute('profile_index', ['id' => $user->getId(), 'page' => $request->get('page')]);
+        return $this->redirect($request->headers->get('referer'));
     }
 
     /**
-     * @Route("/{id}/delete", name="user_delete", methods={"GET","DELETE"})
+     * @Route("/{id}/delete", name="user_delete", methods={"DELETE"})
      */
-    public function delete(User $user, FriendRepository $friendRepository, MailSender $mailSender): Response
+    public function delete(User $user, MailSender $mailSender, Request $request): Response
     {
-        //if ($this->isCsrfTokenValid('delete'.$user->getId(), $request->request->get('_token'))) {
-        $mailSender->sendMessage($user, 'emails/left.html.twig', 'artem.lohvynenko@ekreative.com');
-        $entityManager = $this->getDoctrine()->getManager();
-        foreach (($friendRepository->findByDiff($user->getId())) as $friend) {
-            $entityManager->remove($friend);
-        }
-        $entityManager->remove($user);
-        $entityManager->flush();
-        //}
+        if ($user === $this->getUser() || $this->isGranted('ROLE_ADMIN')) {
+            $form = $this->createFormBuilder(null, [
+                'method' => 'DELETE',
+                'action' => $this->generateUrl('user_delete', [
+                    'id' => $user->getId(),
+                ]),
+            ])->getForm();
 
-        return $this->redirectToRoute('profile_new_user');
+            $form->handleRequest($request);
+
+            if ($form->isSubmitted() && $form->isValid()) {
+                $mailSender->sendMessage($user, 'emails/left.html.twig', 'artem.lohvynenko@ekreative.com');
+                $entityManager = $this->getDoctrine()->getManager();
+                if (count($user->getFriends()) > 0) {
+                    $friendsArray = $user->getFriends();
+                    foreach ($friendsArray as $friend) {
+                        $entityManager->remove($friend);
+                    }
+                }
+                $entityManager->remove($user);
+                $entityManager->flush();
+            }
+
+            return $this->redirectToRoute('profile_new_user');
+        }
+
+        return $this->redirect($request->headers->get('referer'));
     }
 
     /**
@@ -135,16 +152,17 @@ class UserController extends AbstractController
      */
     public function editAvatar(Request $request, Media $medium, UserRepository $userRepository, MediaService $mediaService): Response
     {
-        $form = $this->createForm(MediaType::class);
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            $fileName = $mediaService->upload($request->files->get('media')['file'],
-                                            $userRepository->findOneBy(['avatar' => $medium->getId()])->getId());
-            $medium->setFileName($fileName);
-            $this->getDoctrine()->getManager()->flush();
+        if ($userRepository->findOneBy(['avatar' => $medium->getId()]) === $this->getUser() || $this->isGranted('ROLE_ADMIN')) {
+            $form = $this->createForm(MediaType::class);
+            $form->handleRequest($request);
+            if ($form->isSubmitted() && $form->isValid()) {
+                $fileName = $mediaService->upload($request->files->get('media')['file'],
+                    $userRepository->findOneBy(['avatar' => $medium->getId()])->getId());
+                $medium->setFileName($fileName);
+                $this->getDoctrine()->getManager()->flush();
+            }
         }
 
-        return $this->redirectToRoute('profile_index',
-            ['id' => $userRepository->findOneBy(['avatar' => $medium->getId()])->getId(), 'page' => $request->get('page')]);
+        return $this->redirect($request->headers->get('referer'));
     }
 }

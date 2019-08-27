@@ -31,16 +31,18 @@ class StatusController extends AbstractController
      */
     public function new(Request $request, UserRepository $userRepository): Response
     {
-        $status = new Status();
-        $form = $this->createForm(StatusType::class, $status);
-        $form->handleRequest($request);
+        if ($userRepository->findOneBy(['id' => $request->get('userId')]) === $this->getUser() || $this->isGranted('ROLE_ADMIN')) {
+            $status = new Status();
+            $form = $this->createForm(StatusType::class, $status);
+            $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $user = $userRepository->findOneBy(['id' => (int) $_REQUEST['userId']]);
-            $status->setUser($user);
-            $entityManager = $this->getDoctrine()->getManager();
-            $entityManager->persist($status);
-            $entityManager->flush();
+            if ($form->isSubmitted() && $form->isValid()) {
+                $user = $userRepository->findOneBy(['id' => $request->get('userId')]);
+                $status->setUser($user);
+                $entityManager = $this->getDoctrine()->getManager();
+                $entityManager->persist($status);
+                $entityManager->flush();
+            }
         }
 
         return $this->redirectToRoute('profile_index',
@@ -60,13 +62,15 @@ class StatusController extends AbstractController
     /**
      * @Route("/{id}/edit", name="status_edit", methods={"GET","POST"})
      */
-    public function edit(Request $request, Status $status): Response
+    public function edit(Request $request, Status $status, UserRepository $userRepository): Response
     {
-        $form = $this->createForm(StatusType::class, $status);
-        $form->handleRequest($request);
+        if ($userRepository->findOneBy(['id' => $request->get('userId')]) === $this->getUser() || $this->isGranted('ROLE_ADMIN')) {
+            $form = $this->createForm(StatusType::class, $status);
+            $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
+            if ($form->isSubmitted() && $form->isValid()) {
+                $this->getDoctrine()->getManager()->flush();
+            }
         }
 
         return $this->redirectToRoute('profile_index',

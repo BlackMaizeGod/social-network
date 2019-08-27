@@ -7,7 +7,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class CreateUser
 {
-
     /**
      * @Assert\NotBlank()
      * @Assert\NotNull()
@@ -186,7 +185,4 @@ class CreateUser
     {
         $this->password = $password;
     }
-
-
-
 }

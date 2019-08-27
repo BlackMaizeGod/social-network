@@ -6,6 +6,7 @@ use App\Entity\Post;
 use App\Form\PostType;
 use App\Repository\PostRepository;
 use App\Repository\UserRepository;
+use App\Security\PostVoter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,15 +32,17 @@ class PostController extends AbstractController
      */
     public function new(Request $request, UserRepository $userRepository): Response
     {
-        $post = new Post();
-        $form = $this->createForm(PostType::class, $post);
-        $form->handleRequest($request);
-        $post->setUser($userRepository->findOneBy(['id' => $request->get('userId')]));
+        if ($userRepository->findOneBy(['id' => $request->get('userId')]) === $this->getUser() || $this->isGranted('ROLE_ADMIN')) {
+            $post = new Post();
+            $form = $this->createForm(PostType::class, $post);
+            $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager = $this->getDoctrine()->getManager();
-            $entityManager->persist($post);
-            $entityManager->flush();
+            $post->setUser($userRepository->findOneBy(['id' => $request->get('userId')]));
+            if ($form->isSubmitted() && $form->isValid()) {
+                $entityManager = $this->getDoctrine()->getManager();
+                $entityManager->persist($post);
+                $entityManager->flush();
+            }
         }
 
         return $this->redirectToRoute('profile_index',
@@ -64,6 +67,7 @@ class PostController extends AbstractController
         $form = $this->createForm(PostType::class, $post);
         $form->handleRequest($request);
 
+        $this->denyAccessUnlessGranted(PostVoter::EDIT, $post);
         if ($form->isSubmitted() && $form->isValid()) {
             $this->getDoctrine()->getManager()->flush();
         }
@@ -77,11 +81,10 @@ class PostController extends AbstractController
      */
     public function delete(Request $request, Post $post): Response
     {
-        //if ($this->isCsrfTokenValid('delete'.$post->getId(), $request->request->get('_token'))) {
+        $this->denyAccessUnlessGranted(PostVoter::EDIT, $post);
         $entityManager = $this->getDoctrine()->getManager();
         $entityManager->remove($post);
         $entityManager->flush();
-        //}
 
         return $this->redirectToRoute('profile_index',
             ['id' => $post->getUser()->getId(), 'page' => $request->get('page')]);

@@ -31,24 +31,26 @@ class FriendController extends AbstractController
      */
     public function new(UserRepository $userRepository, Request $request): Response
     {
-        if ($request->get('userId') !== $request->get('friendId')) {
-            $user = $userRepository->findOneBy(['id' => $request->get('userId')]);
-            $friend = $userRepository->findOneBy(['id' => $request->get('friendId')]);
-            $user_friends = $user->getFriends();
-            foreach ($user_friends as $item) {
-                if ($item->getFriend()->getId() === $friend->getId()) {
-                    return $this->redirectToRoute('profile_index',
-                        ['id' => $user->getId(), 'page' => $request->get('page')]);
+        if ($userRepository->findOneBy(['id' => $request->get('userId')]) === $this->getUser() || $this->isGranted('ROLE_ADMIN')) {
+            if ($request->get('userId') !== $request->get('friendId')) {
+                $user = $userRepository->findOneBy(['id' => $request->get('userId')]);
+                $friend = $userRepository->findOneBy(['id' => $request->get('friendId')]);
+                $user_friends = $user->getFriends();
+                foreach ($user_friends as $item) {
+                    if ($item->getFriend()->getId() === $friend->getId()) {
+                        return $this->redirectToRoute('profile_index',
+                            ['id' => $user->getId(), 'page' => $request->get('page')]);
+                    }
                 }
-            }
-            $submit = new Friend();
-            $submit->setUser($user);
-            $submit->setFriend($friend);
-            $submit->setCreated(date_create());
+                $submit = new Friend();
+                $submit->setUser($user);
+                $submit->setFriend($friend);
+                $submit->setCreated(date_create());
 
-            $entityManager = $this->getDoctrine()->getManager();
-            $entityManager->persist($submit);
-            $entityManager->flush();
+                $entityManager = $this->getDoctrine()->getManager();
+                $entityManager->persist($submit);
+                $entityManager->flush();
+            }
         }
 
         return $this->redirectToRoute('profile_index',
@@ -90,13 +92,23 @@ class FriendController extends AbstractController
      */
     public function delete(Request $request, Friend $friend): Response
     {
-        //if ($this->isCsrfTokenValid('delete'.$friend->getId(), $request->request->get('_token'))) {
-        $entityManager = $this->getDoctrine()->getManager();
-        $entityManager->remove($friend);
-        $entityManager->flush();
-        //}
+        if ($friend->getUser() === $this->getUser() || $this->isGranted('ROLE_ADMIN')) {
+            $form = $this->createFormBuilder(null, [
+                'method' => 'DELETE',
+                'action' => $this->generateUrl('friend_delete', [
+                    'id' => $friend->getId(),
+                ]),
+            ])->getForm();
 
-        return $this->redirectToRoute('profile_index',
-            ['id' => $friend->getUser()->getId(), 'page' => $request->get('page')]);
+            $form->handleRequest($request);
+
+            if ($form->isSubmitted() && $form->isValid()) {
+                $entityManager = $this->getDoctrine()->getManager();
+                $entityManager->remove($friend);
+                $entityManager->flush();
+            }
+        }
+
+        return $this->redirect($request->headers->get('referer'));
     }
 }

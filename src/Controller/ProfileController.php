@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Friend;
 use App\Entity\Group;
 use App\Entity\Media;
 use App\Entity\ORM\CreateUser;
@@ -84,6 +85,10 @@ class ProfileController extends AbstractController
             $page, SearchType::class,
             $search, 'find_users_groups', '', '');
         $createdViewFormArray = false === isset($createdViewFormArray) ? '' : $createdViewFormArray;
+        $deleteUserForm = $this->createFormBuilder($someUser)->getForm();
+        $deleteGroupUserFrom = $this->createFormBuilder($group)->getForm();
+        $friend = new Friend();
+        $deleteUserFriendFrom = $this->createFormBuilder($friend)->getForm();
 
         return $this->render('profile/index.html.twig', [
                 'controller_name' => 'ProfileController',
@@ -97,6 +102,9 @@ class ProfileController extends AbstractController
                 'pager' => $postPager,
                 'searchForm' => $searchForm->createView(),
                 'avatarForm' => $avatarForm->createView(),
+                'deleteUserForm' => $deleteUserForm->createView(),
+                'deleteGroupUserForm' => $deleteGroupUserFrom->createView(),
+                'deleteUserFriendForm' => $deleteUserFriendFrom->createView(),
             ]);
     }
 

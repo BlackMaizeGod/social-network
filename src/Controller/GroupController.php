@@ -6,6 +6,7 @@ use App\Entity\Group;
 use App\Form\GroupType;
 use App\Repository\GroupRepository;
 use App\Repository\UserRepository;
+use App\Security\GroupVoter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,15 +32,18 @@ class GroupController extends AbstractController
      */
     public function new(Request $request, UserRepository $userRepository): Response
     {
-        $group = new Group();
-        $form = $this->createForm(GroupType::class, $group);
-        $form->handleRequest($request);
+        if ($userRepository->findOneBy(['id' => $request->get('userId')]) === $this->getUser() || $this->isGranted('ROLE_ADMIN')) {
+            $group = new Group();
+            $form = $this->createForm(GroupType::class, $group);
+            $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $group->addUser($userRepository->findOneBy(['id' => $request->get('userId')]));
-            $entityManager = $this->getDoctrine()->getManager();
-            $entityManager->persist($group);
-            $entityManager->flush();
+            if ($form->isSubmitted() && $form->isValid()) {
+                $group->addUser($userRepository->findOneBy(['id' => $request->get('userId')]));
+                $group->setOwner($userRepository->findOneBy(['id' => $request->get('userId')]));
+                $entityManager = $this->getDoctrine()->getManager();
+                $entityManager->persist($group);
+                $entityManager->flush();
+            }
         }
 
         return $this->redirectToRoute('profile_index',
@@ -64,6 +68,7 @@ class GroupController extends AbstractController
         $form = $this->createForm(GroupType::class, $group);
         $form->handleRequest($request);
 
+        $this->denyAccessUnlessGranted(GroupVoter::EDIT, $group);
         if ($form->isSubmitted() && $form->isValid()) {
             $this->getDoctrine()->getManager()->flush();
 
@@ -79,18 +84,27 @@ class GroupController extends AbstractController
     }
 
     /**
-     * @Route("/{id}/group_delete", name="group_delete", methods={"GET","DELETE"})
+     * @Route("/{id}/group_delete", name="group_delete", methods={"DELETE"})
      */
     public function delete(Request $request, Group $group): Response
     {
-        //if ($this->isCsrfTokenValid('delete'.$group->getId(), $request->request->get('_token'))) {
-        $entityManager = $this->getDoctrine()->getManager();
-        $entityManager->remove($group);
-        $entityManager->flush();
-        //}
+        $form = $this->createFormBuilder(null, [
+            'method' => 'DELETE',
+            'action' => $this->generateUrl('group_delete', [
+                'id' => $group->getId(),
+            ]),
+        ])->getForm();
 
-        return $this->redirectToRoute('profile_index',
-            ['id' => $request->get('userId'), 'page' => $request->get('page')]);
+        $form->handleRequest($request);
+
+        $this->denyAccessUnlessGranted(GroupVoter::EDIT, $group);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager->remove($group);
+            $entityManager->flush();
+        }
+
+        return $this->redirect($request->headers->get('referer'));
     }
 
     /**
@@ -98,10 +112,11 @@ class GroupController extends AbstractController
      */
     public function remove_user(Request $request, Group $group, UserRepository $userRepository): Response
     {
-        $group->removeUser($userRepository->findOneBy(['id' => $request->get('userId')]));
-        $this->getDoctrine()->getManager()->flush();
+        if ($userRepository->findOneBy(['id' => $request->get('userId')]) === $this->getUser() || $this->isGranted('ROLE_ADMIN')) {
+            $group->removeUser($userRepository->findOneBy(['id' => $request->get('userId')]));
+            $this->getDoctrine()->getManager()->flush();
+        }
 
-        return $this->redirectToRoute('profile_index',
-            ['id' => $request->get('userId'), 'page' => $request->get('page')]);
+        return $this->redirect($request->headers->get('referer'));
     }
 }

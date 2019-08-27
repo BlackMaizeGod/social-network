@@ -137,3 +137,18 @@ a:hover{
 legend{
   display: none;
 }
+.logged-user {
+  border: 1px solid darkcyan;
+  border-radius: 1rem;
+  background: white;
+  font-family: fantasy;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  a{
+    color: darkcyan;
+  }
+  .btn{
+    color: white;
+  }
+}

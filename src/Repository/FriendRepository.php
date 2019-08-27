@@ -19,17 +19,6 @@ class FriendRepository extends ServiceEntityRepository
         parent::__construct($registry, Friend::class);
     }
 
-    public function findByDiff($id)
-    {
-        return $this->createQueryBuilder('f')
-            ->select('f')
-            ->where('f.user=?1')
-            ->orWhere('f.friend=?1')
-            ->setParameter(1, $id)
-            ->getQuery()
-            ->getResult();
-    }
-
     // /**
     //  * @return Friend[] Returns an array of Friend objects
     //  */

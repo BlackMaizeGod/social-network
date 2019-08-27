@@ -60,7 +60,7 @@ class User implements UserInterface
      * @Assert\NotBlank
      * @Assert\Length(
      *      min = 8,
-     *      max = 20,
+     *      max = 65,
      *      minMessage = "must be at least 8 characters long",
      *      maxMessage = "cannot be longer than 20 characters"
      * )
@@ -361,9 +361,7 @@ class User implements UserInterface
 
     public function getRoles()
     {
-        return [
-            'ROLE_USER',
-        ];
+        return $this->roles;
     }
 
     public function getSalt()
@@ -430,7 +428,4 @@ class User implements UserInterface
 
         return $this;
     }
-
-
-
 }

@@ -8,6 +8,7 @@ class MediaService
     {
         move_uploaded_file($file->getPathName(),
             'upload/'.$userId);
+
         return 'upload/'.$userId;
     }
 }
