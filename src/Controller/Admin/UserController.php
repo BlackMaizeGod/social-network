@@ -41,7 +41,7 @@ class UserController extends AbstractController
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $userArray = $verification->getUser();
+            $userArray = $verification->getUsers();
             if (count($userArray) > 0) {
                 foreach ($userArray as $user) {
                     $user->setVerification($verification->getChoice());

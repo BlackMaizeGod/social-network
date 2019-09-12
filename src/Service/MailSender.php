@@ -34,11 +34,10 @@ class MailSender
                     ),
                     'text/html'
                 );
+            $this->mailer->send($message);
         } catch (LoaderError $e) {
         } catch (RuntimeError $e) {
         } catch (SyntaxError $e) {
         }
-
-        $this->mailer->send($message);
     }
 }

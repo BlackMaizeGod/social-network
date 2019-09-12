@@ -15,7 +15,7 @@ class VerificationUserType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('user', EntityType::class, [
+            ->add('users', EntityType::class, [
                 'required' => false,
                 'class' => User::class,
                 'label' => false,

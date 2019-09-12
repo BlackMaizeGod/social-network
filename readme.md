@@ -6,4 +6,5 @@
     * bootstrap ( by npm ), 
     * jQuery ( by npm ),
     * gulp ( by npm )
-- Project diagram: https://dbdesigner.page.link/zJfdhvLgaa67dgp56
+- (not actual):
+    Project diagram: https://dbdesigner.page.link/zJfdhvLgaa67dgp56

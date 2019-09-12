@@ -50,6 +50,7 @@ class UserController extends AbstractController
             $user->setPassword(password_hash($userModel->getPassword(), PASSWORD_BCRYPT, ['cost' => 11]));
             $user->setEmail($userModel->getEmail());
             $user->setRoles(['ROLE_USER']);
+            $user->setApiToken(md5(date('l dS of F Y h:i:s A')));
             $user->setToken(md5($userModel->getLogin()));
             $user->setVerification(false);
             $status = new Status();

@@ -12,6 +12,19 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+
+        api_login:
+            pattern: ^/api/login
+            anonymous: true
+
+        api:
+            pattern: ^/api
+            anonymous: false
+            stateless: true
+            guard:
+                authenticators:
+                    - App\Security\TokenAuthenticator
+
         main:
             anonymous: true
             guard:
@@ -29,7 +42,6 @@ security:
         allow_if_all_abstain: false
     access_control:
          - { path: ^/admin, roles: ROLE_ADMIN }
-         - { path: ^/users, roles: ROLE_USER}
          - { path: ^/friends, roles: ROLE_USER }
          - { path: ^/groups, roles: ROLE_USER}
          - { path: ^/posts, roles: ROLE_USER}

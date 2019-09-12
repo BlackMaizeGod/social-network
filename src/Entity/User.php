@@ -131,6 +131,11 @@ class User implements UserInterface
      */
     private $verification;
 
+    /**
+     * @ORM\Column(type="string", length=255, unique=true)
+     */
+    private $apiToken;
+
     public function __construct()
     {
         $this->posts = new ArrayCollection();
@@ -425,6 +430,18 @@ class User implements UserInterface
     public function setVerification(bool $verification): self
     {
         $this->verification = $verification;
+
+        return $this;
+    }
+
+    public function getApiToken(): ?string
+    {
+        return $this->apiToken;
+    }
+
+    public function setApiToken(string $apiToken): self
+    {
+        $this->apiToken = $apiToken;
 
         return $this;
     }

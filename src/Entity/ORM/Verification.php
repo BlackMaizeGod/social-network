@@ -13,7 +13,7 @@ class Verification
      * @var ArrayCollection
      * @Assert\NotNull()
      */
-    private $user;
+    private $users;
 
     /**
      * @var bool
@@ -23,20 +23,20 @@ class Verification
 
     public function __construct()
     {
-        $this->user = new ArrayCollection();
+        $this->users = new ArrayCollection();
     }
 
     /**
      * @return Collection|User[]
      */
-    public function getUser(): Collection
+    public function getUsers(): Collection
     {
-        return $this->user;
+        return $this->users;
     }
 
-    public function setUser(?User $user): void
+    public function setUsers(?User $user): void
     {
-        $this->user = $user;
+        $this->users = $user;
     }
 
     public function getChoice(): ?bool
